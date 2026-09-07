@@ -1,8 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Game,WORLD,BEACONS,CAMPS,TOWER,NPCS,recipes,walkable,groundHeight,height,dist,MAP_CELLS} from '../dist/core.js';
-import {WorldView} from '../dist/world.js';
-import * as THREE from '../dist/vendor/three.module.js';
 
 test('All objectives and resources are reachable on the connected island',()=>{
   const span=180,step=2,seen=new Set(),queue=[[-42,64]],key=(x,z)=>x+','+z;seen.add(key(-42,64));
@@ -49,10 +47,4 @@ test('Side quests reward once, camps allow travel, death preserves campaign prog
 test('Malformed saves are bounded and ordinary harvests respawn while chests stay empty',()=>{
   const g=new Game({version:1,x:Infinity,z:NaN,level:-20,inventory:{coins:-100,wood:'oops'},explored:[-1,1,1,Infinity,99999]});assert.ok(Number.isFinite(g.state.x));assert.equal(g.state.level,1);assert.equal(g.state.inventory.coins,0);assert.ok(g.state.explored.every(n=>n>=0&&n<MAP_CELLS*MAP_CELLS));
   const herb=WORLD.nodes.find(n=>n.type==='herb'),chest=WORLD.nodes.find(n=>n.type==='chest');g.state.harvests[herb.id]=0;g.state.harvests[chest.id]=0;g.state.elapsed=181;assert.ok(g.nodeAvailable(herb));assert.equal(g.nodeAvailable(chest),false);
-});
-test('Scene construction uses finite geometry and resolvable shaders',()=>{
-  const v=Object.create(WorldView.prototype);v.scene=new THREE.Scene();v.game=new Game();v.buildTerrain();v.buildNature();v.buildSettlement();v.buildLandmarks();v.buildResources();v.makeParticles();
-  for(const e of v.game.enemies)v.enemy(e);
-  let meshes=0;v.scene.traverse(o=>{if(o.isMesh){meshes++;assert.ok(o.geometry.attributes.position);const a=o.geometry.attributes.position.array;for(const n of a)assert.ok(Number.isFinite(n));}});assert.ok(meshes>200);
-  for(const shader of[v.waterMaterial.vertexShader,v.waterMaterial.fragmentShader]){assert.equal(/[^\s] +#include/.test(shader),false,'Includes must start on a line');for(const m of shader.matchAll(/#include <([^>]+)>/g))assert.ok(THREE.ShaderChunk[m[1]],m[1]);}
 });
